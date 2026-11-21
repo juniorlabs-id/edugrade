@@ -109,6 +109,14 @@ Bila tampilan masih versi lama, tekan **Ctrl+Shift+R**.
 
 ---
 
+## Memperbarui ke versi baru (pesanan, rekening/QRIS, affiliate)
+
+1. **Backend:** buka proyek Apps Script → ganti seluruh isi `Kode.gs` dengan versi baru → Simpan.
+2. Sheet baru (`PESANAN`, `AFFILIATE_DAFTAR`) dan pengaturan baru dibuat otomatis saat pertama dipakai. **Jangan** menjalankan `setupAppEnvironment` lagi.
+3. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru → Terapkan.** URL `/exec` tetap sama. Bila diminta izin ulang (untuk menyimpan gambar QRIS di Drive), klik Izinkan.
+4. **Frontend:** timpa file di folder proyek dengan isi ZIP baru, **kecuali `js/config.js`** (agar `GAS_URL` Anda tidak tertimpa), lalu `git add .` → `git commit -m "Versi pembayaran"` → `git push`. Vercel otomatis memperbarui situs.
+5. Masuk admin → **Pengaturan → Pembayaran**: isi rekening, unggah gambar QRIS, lalu **Simpan semua perubahan**.
+
 ## Masalah umum
 
 | Gejala | Penyebab & solusi |
@@ -118,6 +126,8 @@ Bila tampilan masih versi lama, tekan **Ctrl+Shift+R**.
 | Halaman 404 di GitHub Pages | `index.html` tidak berada di root repo (salah folder saat `git init`). |
 | Email kode tidak terkirim | Cek kuota email harian Gmail (±100/hari untuk akun biasa) di tombol *Kirim email uji coba*. |
 | "Setup belum dijalankan" | Jalankan `setupAppEnvironment` sekali. |
+| Gambar QRIS tidak tampil di halaman bayar | Akun Google Workspace sekolah/kantor kadang melarang berbagi "siapa saja yang memiliki link". Pakai akun Gmail biasa untuk Apps Script, atau unggah ulang QRIS. |
+| Tombol Beli Sekarang tidak muncul | Rekening atau QRIS belum diisi di Pengaturan, sehingga yang tampil tombol pesan lewat WhatsApp. |
 | Nilai terbaca kosong | File guru berisi rumus yang belum dihitung. Buka di Excel, tekan Simpan, unggah lagi. |
 
 ## Catatan teknis singkat

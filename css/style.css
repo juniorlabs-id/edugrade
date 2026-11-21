@@ -69,7 +69,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .topbar-in { max-width: 1216px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 700; font-size: 18px; }
 .brand-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: #fff; display: grid; place-items: center; object-fit: cover; flex: none; }
-.nav { display: flex; gap: 32px; height: 100%; }
+.nav { display: flex; gap: 24px; height: 100%; }
 .nav a { display: flex; align-items: center; color: var(--muted); font-size: 15px; border-bottom: 2px solid transparent; }
 .nav a:hover { color: var(--ink); }
 .nav a.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }

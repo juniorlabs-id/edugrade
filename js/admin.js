@@ -61,11 +61,11 @@
   // ============================================
   // KERANGKA ADMIN
   // ============================================
-  const NAV = [['ringkasan', 'dashboard', 'Ringkasan'], ['kode', 'key', 'Kode'], ['penjualan', 'receipt', 'Penjualan'], ['affiliate', 'users', 'Affiliate'], ['paket', 'package', 'Paket & Harga'], ['pengaturan', 'settings', 'Pengaturan'], ['log', 'history', 'Log Aktivitas']];
+  const NAV = [['ringkasan', 'dashboard', 'Ringkasan'], ['pesanan', 'clipboard', 'Pesanan'], ['kode', 'key', 'Kode'], ['penjualan', 'receipt', 'Penjualan'], ['affiliate', 'users', 'Affiliate'], ['paket', 'package', 'Paket & Harga'], ['pengaturan', 'settings', 'Pengaturan'], ['log', 'history', 'Log Aktivitas']];
   function shell(page, title, content, badges) {
     badges = badges || S.badges || {};
     $('#root').innerHTML = '<div class="admin"><aside class="sidebar"><div><div class="brandbar"><img class="brand-mark" style="width:34px;height:34px" src="assets/icon-192.png" alt=""><span class="lbl">EduGrade Admin</span></div><nav>' +
-      NAV.map(n => '<a href="#/' + n[0] + '" class="' + (page === n[0] ? 'on' : '') + '" title="' + n[2] + '"><span class="l">' + icon(n[1]) + '<span class="lbl">' + n[2] + '</span></span>' + (badges[n[0]] ? '<span class="badge ' + (n[0] === 'penjualan' ? 'warn' : '') + '">' + badges[n[0]] + '</span>' : '') + '</a>').join('') +
+      NAV.map(n => '<a href="#/' + n[0] + '" class="' + (page === n[0] ? 'on' : '') + '" title="' + n[2] + '"><span class="l">' + icon(n[1]) + '<span class="lbl">' + n[2] + '</span></span>' + (badges[n[0]] ? '<span class="badge ' + (n[0] === 'penjualan' || n[0] === 'pesanan' ? 'warn' : '') + '">' + badges[n[0]] + '</span>' : '') + '</a>').join('') +
       '</nav></div><div class="out"><button id="logout">' + icon('logout') + '<span class="lbl">Keluar</span></button></div></aside>' +
       '<div class="admin-main"><header class="admin-top"><div class="row small"><span class="muted">Admin</span>' + icon('chev-right', 'ic-sm muted') + '<b>' + esc(title) + '</b></div><div class="row"><a class="btn btn-outline btn-sm" href="index.html" target="_blank">' + icon('eye', 'ic-sm') + 'Lihat aplikasi guru</a><span class="row" style="gap:8px"><span class="rank" style="background:var(--primary-tint);color:var(--primary);width:34px;height:34px">AU</span><b class="small">Admin</b></span></div></header>' +
       '<div class="admin-content" id="content">' + content + '</div></div></div>';
@@ -75,7 +75,7 @@
   const head = (title, sub, actions) => '<div class="row-between"><div class="stack-xs"><h1 class="h1">' + title + '</h1>' + (sub ? '<p class="muted">' + sub + '</p>' : '') + '</div><div class="row wrap">' + (actions || '') + '</div></div>';
   const stat = (lbl, val, chip, extra) => '<div class="stat"><span class="small muted">' + lbl + '</span><div class="row-between" style="gap:8px"><span class="v">' + val + '</span>' + (chip || '') + '</div>' + (extra || '') + '</div>';
   const kodeStatus = st => '<span class="pill ' + ({ BARU: 'pill-primary', AKTIF: 'pill-success', HABIS: 'pill-neutral', KEDALUWARSA: 'pill-warning', NONAKTIF: 'pill-danger' }[st] || 'pill-neutral') + '">' + esc(st) + '</span>';
-  const komisiStatus = st => st === 'BELUM' ? '<span class="pill pill-warning">Belum dibayar</span>' : st === 'DIBAYAR' ? '<span class="pill pill-success">Sudah dibayar</span>' : '<span class="pill pill-neutral">Tanpa komisi</span>';
+  const komisiStatus = st => st === 'SENDIRI' ? '<span class="pill pill-neutral" title="Affiliate membeli untuk dirinya sendiri">Beli sendiri · Rp 0</span>' : st === 'BELUM' ? '<span class="pill pill-warning">Belum dibayar</span>' : st === 'DIBAYAR' ? '<span class="pill pill-success">Sudah dibayar</span>' : '<span class="pill pill-neutral">Tanpa komisi</span>';
   const errBox = r => '<div class="info danger">' + icon('alert-circle') + '<div>' + esc(r.message || 'Gagal memuat data.') + ' <button class="link-btn" onclick="location.reload()">Coba lagi</button></div></div>';
   const bar = (used, total) => '<div class="stack-xs" style="min-width:120px"><span class="small tnum"><b>' + used + ' / ' + total + '</b> terpakai</span><div class="progress"><div style="width:' + (total ? Math.min(100, used / total * 100) : 0) + '%"></div></div></div>';
 
@@ -87,9 +87,11 @@
     const r = await api('admin.dashboard');
     if (!r.success) return ($('#content').innerHTML = errBox(r));
     const d = r.data, k = d.kartu;
-    S.badges = { kode: k.kodeAktif, penjualan: k.komisiBelumMitra || '', affiliate: '' };
+    S.badges = { kode: k.kodeAktif, penjualan: k.komisiBelumMitra || '', affiliate: k.daftarMenunggu || '', pesanan: k.pesananMenunggu || '' };
     const maxJ = Math.max(1, d.perJenis.EREPORT + d.perJenis.KONVERSI);
     shell('ringkasan', 'Ringkasan', head('Ringkasan Penjualan', 'Pantau penjualan kode, pemakaian kuota, dan komisi mitra.', '<a class="btn btn-secondary" href="#/penjualan">' + icon('receipt', 'ic-sm') + 'Lihat penjualan</a><a class="btn btn-primary" href="#/buat">' + icon('plus', 'ic-sm') + 'Buat Kode Baru</a>') +
+      (k.pesananMenunggu ? '<div class="info warning row-between" style="align-items:center"><span class="row">' + icon('clipboard') + '<b>' + k.pesananMenunggu + ' pesanan menunggu verifikasi pembayaran.</b></span><a class="btn btn-primary btn-sm" href="#/pesanan">Periksa pesanan</a></div>' : '') +
+      (k.daftarMenunggu ? '<div class="info row-between" style="align-items:center"><span class="row">' + icon('users') + '<b>' + k.daftarMenunggu + ' pendaftar affiliate baru.</b></span><a class="btn btn-secondary btn-sm" href="#/affiliate">Lihat pendaftar</a></div>' : '') +
       '<section class="grid-5">' + stat('Kode terjual bulan ini', k.terjualBulan) + stat('Pendapatan bulan ini', rupiah(k.pendapatanBulan)) + stat('Kode aktif', k.kodeAktif, '<span class="pill pill-primary">Siap pakai</span>') +
       stat('Kuota terpakai', k.kuotaTerpakai + ' / ' + k.kuotaTotal, '', '<div class="progress"><div style="width:' + (k.kuotaTotal ? k.kuotaTerpakai / k.kuotaTotal * 100 : 0) + '%"></div></div>') +
       stat('Komisi belum dibayar', rupiah(k.komisiBelum), k.komisiBelumMitra ? '<span class="pill pill-warning">' + k.komisiBelumMitra + ' mitra</span>' : '') + '</section>' +
@@ -247,7 +249,7 @@
       '<section class="card stack-sm"><h2 class="h3">2. Paket dan kuota</h2><div class="grid-3" style="gap:12px">' + paket.map(p => '<div class="choice ' + (p.id === pid ? 'on' : '') + '" data-pid="' + esc(p.id) + '"><span class="tick">' + icon('check', 'ic-sm') + '</span><b>' + esc(p.nama) + '</b><span class="h3 tnum">' + rupiah(p.harga) + '</span><span class="small muted">' + p.kuota + ' kuota · ' + U.masa(p.jam) + '</span></div>').join('') + '</div>' +
       '<div class="grid-3" style="gap:16px"><label class="field"><span class="field-label">Kuota</span><input class="input" type="number" name="kuota" min="1"></label><label class="field"><span class="field-label">Masa berlaku (jam)</span><input class="input" type="number" name="masa_jam" min="1"></label><label class="field"><span class="field-label">Harga (Rp)</span><input class="input" type="number" name="harga" min="0"></label></div>' +
       '<p class="small muted">Masa berlaku dihitung sejak unduhan pertama.</p></section>' +
-      '<section class="card stack-sm"><h2 class="h3">3. Asal penjualan</h2><label class="field"><span class="field-label">Mitra / kode referral</span><select class="select" name="affiliate_id"><option value="">Langsung (tanpa mitra)</option>' + affs.map(a => '<option value="' + esc(a.id) + '">' + esc(a.nama) + ' · ' + esc(a.ref) + ' (' + a.persen + '%)</option>').join('') + '</select></label>' +
+      '<section class="card stack-sm"><h2 class="h3">3. Asal penjualan</h2><label class="field"><span class="field-label">Mitra / kode referral</span><select class="select" name="affiliate_id"><option value="">Langsung (tanpa mitra)</option>' + affs.map(a => '<option value="' + esc(a.id) + '">' + esc(a.nama) + ' · ' + esc(a.ref) + ' (' + a.persen + '%)</option>').join('') + '</select></label><div id="selfw"></div>' +
       '<div class="grid-2" style="gap:16px"><div class="field"><span class="field-label">Status pembayaran</span><div class="seg"><button type="button" class="on" data-lunas="1">Lunas</button><button type="button" data-lunas="0">Menunggu</button></div></div><div class="field"><span class="field-label">Jumlah kode</span><input class="input" type="number" name="jumlah" value="1" min="1" max="50"></div></div></section>' +
       '<section class="card stack-sm"><h2 class="h3">4. Pengiriman</h2><label class="row" style="gap:10px"><input type="checkbox" class="check" name="kirimEmail" checked>Kirim kode ke email pembeli secara otomatis</label><label class="field"><span class="field-label">Catatan (opsional)</span><input class="input" name="catatan"></label></section></div>' +
       '<aside class="sticky-side stack"><div class="card stack-sm"><h2 class="h3">Ringkasan</h2><div id="sum"></div><button class="btn btn-primary btn-lg btn-block" type="submit">' + icon('check') + 'Simpan dan Buat Kode</button><a class="btn btn-outline btn-block" href="#/kode">Batal</a></div>' +
@@ -262,8 +264,10 @@
     };
     const upd = () => {
       const p = paket.find(x => x.id === pid) || {}, a = affs.find(x => x.id === f.affiliate_id.value), harga = +f.harga.value || 0, n = Math.max(1, +f.jumlah.value || 1);
-      const kom = a ? Math.round(harga * a.persen / 100) : 0;
-      $('#sum').innerHTML = '<dl class="kv" style="grid-template-columns:120px 1fr">' + [['Penerima', esc(f.nama.value || '-')], ['Paket', esc(p.nama || '-') + ' · ' + (f.kuota.value || 0) + ' kuota'], ['Masa berlaku', U.masa(+f.masa_jam.value)], ['Jumlah kode', n], ['Total bayar', '<b>' + rupiah(harga * n) + '</b> ' + (lunas ? '<span class="pill pill-success">LUNAS</span>' : '<span class="pill pill-warning">MENUNGGU</span>')], ['Komisi mitra', a ? rupiah(kom * n) + ' (' + a.persen + '%)' : '-'], ['Bersih', rupiah((harga - kom) * n)]].map(x => '<dt>' + x[0] + '</dt><dd>' + x[1] + '</dd>').join('') + '</dl>';
+      const self = isSelf(a, f.email.value, f.wa.value);
+      const kom = a && !self ? Math.round(harga * a.persen / 100) : 0;
+      $('#selfw').innerHTML = selfWarn(a, f.email.value, f.wa.value);
+      $('#sum').innerHTML = '<dl class="kv" style="grid-template-columns:120px 1fr">' + [['Penerima', esc(f.nama.value || '-')], ['Paket', esc(p.nama || '-') + ' · ' + (f.kuota.value || 0) + ' kuota'], ['Masa berlaku', U.masa(+f.masa_jam.value)], ['Jumlah kode', n], ['Total bayar', '<b>' + rupiah(harga * n) + '</b> ' + (lunas ? '<span class="pill pill-success">LUNAS</span>' : '<span class="pill pill-warning">MENUNGGU</span>')], ['Komisi mitra', a ? (self ? 'Rp 0 (beli sendiri)' : rupiah(kom * n) + ' (' + a.persen + '%)') : '-'], ['Bersih', rupiah((harga - kom) * n)]].map(x => '<dt>' + x[0] + '</dt><dd>' + x[1] + '</dd>').join('') + '</dl>';
       const masa = U.masa(+f.masa_jam.value) + ' sejak unduhan pertama';
       $('#wap').textContent = String(st.WA_TEMPLATE || '').replace(/\{NAMA_GURU\}/g, f.nama.value || 'Bapak/Ibu').replace(/\{SEKOLAH\}/g, f.sekolah.value).replace(/\{KODE\}/g, 'EG-XXXX-XXXX').replace(/\{PAKET\}/g, p.nama || '').replace(/\{KUOTA\}/g, f.kuota.value).replace(/\{MASA_BERLAKU\}/g, masa).replace(/\{LINK_WEB\}/g, st.LINK_WEB || '');
     };
@@ -279,15 +283,85 @@
       const r = await api('admin.kodeCreate', d);
       btn.disabled = false; btn.innerHTML = icon('check') + 'Simpan dan Buat Kode';
       if (!r.success) return U.toast(r.message, 'error');
-      const x = r.data;
-      const md = U.modal('<div class="modal-head"><div class="row"><span class="icon-tile sm success">' + icon('check') + '</span><h2 class="h2">' + esc(r.message) + '</h2></div><button class="icon-btn" data-close>' + icon('x') + '</button></div>' +
-        x.codes.map(c => '<div class="code-box">' + esc(c) + '</div>').join('') +
-        '<div class="row wrap">' + (d.email && d.kirimEmail ? (x.emailSent ? '<span class="pill pill-success">' + icon('mail', 'ic-sm') + 'Email terkirim</span>' : '<span class="pill pill-danger">Email gagal: ' + esc(x.emailError) + '</span>') : '') + (x.komisi ? '<span class="pill pill-primary">Komisi ' + rupiah(x.komisi) + ' tercatat</span>' : '') + '</div>' +
-        '<div class="row wrap"><button class="btn btn-outline" id="cc">' + icon('copy', 'ic-sm') + 'Salin kode</button><button class="btn btn-secondary" id="cw">' + icon('copy', 'ic-sm') + 'Salin pesan WA</button>' + (x.wa ? '<a class="btn btn-primary" target="_blank" rel="noopener" href="' + U.waLink(x.wa, x.waText) + '">' + icon('chat', 'ic-sm') + 'Kirim lewat WhatsApp</a>' : '') + '</div>' +
-        '<div class="row-between" style="border-top:1px solid var(--border);padding-top:14px"><a class="link-btn" href="#/kode/' + esc(x.kode_id) + '" data-close>Lihat detail kode</a><button class="btn btn-outline btn-sm" data-close id="again">Buat kode lagi</button></div>', { onClose: () => { if (location.hash.startsWith('#/buat')) pBuat(); } });
-      md.el.querySelector('#cc').addEventListener('click', () => U.copyText(x.codes.join('\n')));
-      md.el.querySelector('#cw').addEventListener('click', () => U.copyText(x.waText));
+      codeResult(r, d.email, d.kirimEmail, () => { if (location.hash.startsWith('#/buat')) pBuat(); });
     });
+  }
+
+
+  // ============================================
+  // PESANAN (dari form order guru)
+  // ============================================
+  async function pPesanan() {
+    shell('pesanan', 'Pesanan', skeleton());
+    const [r, ra] = await Promise.all([api('admin.orderList'), api('admin.affList')]);
+    if (!r.success) return ($('#content').innerHTML = errBox(r));
+    S.cache.order = r.data; S.cache.aff = ra.success ? ra.data : [];
+    S.badges = Object.assign({}, S.badges, { pesanan: r.data.filter(o => o.status === 'MENUNGGU').length || '' });
+    renderPesanan();
+  }
+  function renderPesanan() {
+    const all = S.cache.order || [];
+    S.orderTab = S.orderTab || 'MENUNGGU';
+    const q = (S.orderQ || '').toLowerCase();
+    const list = all.filter(o => (S.orderTab === 'ALL' || o.status === S.orderTab) && (!q || [o.id, o.nama, o.sekolah, o.wa, o.email, o.total, o.kode].join(' ').toLowerCase().includes(q)));
+    const cnt = t => all.filter(o => t === 'ALL' || o.status === t).length;
+    shell('pesanan', 'Pesanan', head('Pesanan Masuk', 'Pesanan dari halaman Beli. Cocokkan pembayaran (total dengan kode unik) lalu verifikasi untuk membuat kode otomatis.', '<a class="btn btn-outline" href="#/pengaturan">' + icon('settings', 'ic-sm') + 'Atur rekening & QRIS</a>') +
+      '<section class="grid-4">' + stat('Menunggu verifikasi', cnt('MENUNGGU'), cnt('MENUNGGU') ? '<span class="pill pill-warning">Perlu dicek</span>' : '') + stat('Lunas', cnt('LUNAS')) + stat('Dibatalkan', cnt('BATAL')) + stat('Nilai menunggu', rupiah(all.filter(o => o.status === 'MENUNGGU').reduce((a, o) => a + o.total, 0))) + '</section>' +
+      '<div class="card-flat row-between"><div class="chips">' + [['MENUNGGU', 'Menunggu'], ['LUNAS', 'Lunas'], ['BATAL', 'Batal'], ['ALL', 'Semua']].map(t => '<button class="chip ' + (S.orderTab === t[0] ? 'on' : '') + '" data-otab="' + t[0] + '">' + t[1] + ' (' + cnt(t[0]) + ')</button>').join('') + '</div>' +
+      '<div class="search">' + icon('search') + '<input class="input" id="oq" placeholder="Cari nama, WA, nominal, no. pesanan" value="' + esc(S.orderQ || '') + '"></div></div>' +
+      '<section class="card p0"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Pesanan</th><th>Pemesan</th><th>Paket</th><th class="r">Total</th><th>Cara bayar</th><th>Referral</th><th>Status</th><th class="r">Aksi</th></tr></thead><tbody>' +
+      (list.length ? list.map((o, i) => '<tr><td><span class="mono b small">' + esc(o.id) + '</span><div class="small muted">' + tglJam(o.tanggal) + '</div></td>' +
+        '<td><b>' + esc(o.nama) + '</b><div class="small muted">' + esc(o.sekolah || '') + '</div><div class="small">' + (o.wa ? '<a target="_blank" rel="noopener" href="' + U.waLink(o.wa, 'Halo ' + o.nama + ', terkait pesanan EduGrade ' + o.id + ' (' + rupiah(o.total) + ').') + '">' + esc(o.wa) + '</a>' : '') + (o.email ? ' · ' + esc(o.email) : '') + '</div></td>' +
+        '<td>' + esc(o.paket) + '</td><td class="r"><b class="tnum" style="font-size:16px">' + rupiah(o.total) + '</b>' + (o.kodeUnik ? '<div class="small muted tnum">kode unik ' + o.kodeUnik + '</div>' : '') + '</td><td class="small">' + esc(o.metode) + '</td>' +
+        '<td class="small">' + (o.affiliate ? esc(o.affiliate) + (o.beliSendiri ? '<div><span class="pill pill-warning">Beli sendiri</span></div>' : '') : (o.ref ? '<span class="muted">' + esc(o.ref) + ' (tidak dikenal)</span>' : '<span class="muted">–</span>')) + '</td>' +
+        '<td>' + (o.status === 'MENUNGGU' ? '<span class="pill pill-warning">Menunggu</span>' : o.status === 'LUNAS' ? '<span class="pill pill-success">Lunas</span><div class="mono small"><a href="#/kode/' + esc(o.kode_id) + '">' + esc(o.kode) + '</a></div>' : '<span class="pill pill-neutral">Batal</span>') + '</td>' +
+        '<td class="r">' + (o.status === 'MENUNGGU' ? '<div class="row" style="justify-content:flex-end;gap:6px"><button class="btn btn-primary btn-xs" data-ver="' + esc(o.id) + '">' + icon('check', 'ic-sm') + 'Verifikasi</button><button class="btn btn-outline btn-xs" data-bat="' + esc(o.id) + '">Batal</button></div>' : '') + '</td></tr>').join('')
+        : '<tr><td colspan="8"><div class="empty">' + icon('clipboard', 'ic-lg') + (S.orderTab === 'MENUNGGU' ? 'Tidak ada pesanan yang menunggu.' : 'Belum ada pesanan.') + '</div></td></tr>') + '</tbody></table></div></section>');
+    document.querySelectorAll('[data-otab]').forEach(b => b.addEventListener('click', () => { S.orderTab = b.dataset.otab; renderPesanan(); }));
+    let t; $('#oq').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { S.orderQ = $('#oq').value; renderPesanan(); const f = $('#oq'); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250); });
+    document.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => verifyOrder(all.find(o => o.id === b.dataset.ver))));
+    document.querySelectorAll('[data-bat]').forEach(b => b.addEventListener('click', async () => {
+      const md = U.modal('<div class="modal-head"><h2 class="h3">Batalkan pesanan ' + esc(b.dataset.bat) + '</h2><button class="icon-btn sm" data-close>' + icon('x', 'ic-sm') + '</button></div><label class="field"><span class="field-label">Alasan (tampil ke pemesan)</span><input class="input" id="al" value="Pembayaran tidak ditemukan"></label><div class="row" style="justify-content:flex-end"><button class="btn btn-outline" data-close>Kembali</button><button class="btn btn-danger" data-ok>Batalkan pesanan</button></div>');
+      md.el.querySelector('[data-ok]').addEventListener('click', async () => { const r = await api('admin.orderProcess', { id: b.dataset.bat, op: 'batal', alasan: md.el.querySelector('#al').value }); md.close(); U.toast(r.message, r.success ? 'success' : 'error'); pPesanan(); });
+    }));
+  }
+  function verifyOrder(o) {
+    const affs = (S.cache.aff || []).filter(a => a.aktif);
+    const md = U.modal('<div class="modal-head"><h2 class="h3">Verifikasi pembayaran</h2><button class="icon-btn sm" data-close>' + icon('x', 'ic-sm') + '</button></div>' +
+      '<div class="card-flat stack-xs" style="background:var(--page)"><span class="small muted">Pastikan dana masuk sebesar</span><b class="tnum" style="font-size:28px">' + rupiah(o.total) + '</b><span class="small">' + esc(o.metode) + ' · ' + esc(o.nama) + (o.sekolah ? ' · ' + esc(o.sekolah) : '') + '</span></div>' +
+      '<dl class="kv" style="grid-template-columns:120px 1fr"><dt>Paket</dt><dd>' + esc(o.paket) + ' (' + o.kuota + ' kuota)</dd><dt>Email</dt><dd>' + esc(o.email || '-') + '</dd><dt>WhatsApp</dt><dd>' + esc(o.wa) + '</dd></dl>' +
+      '<label class="field"><span class="field-label">Affiliate</span><select class="select" id="va"><option value="">Langsung (tanpa mitra)</option>' + affs.map(a => '<option value="' + esc(a.id) + '" ' + (a.id === o.affiliate_id ? 'selected' : '') + '>' + esc(a.nama) + ' · ' + esc(a.ref) + ' (' + a.persen + '%)</option>').join('') + '</select></label><div id="vself"></div>' +
+      '<label class="row" style="gap:10px"><input type="checkbox" class="check" id="ve" ' + (o.email ? 'checked' : 'disabled') + '>Kirim kode ke email pemesan</label>' +
+      '<div class="row" style="justify-content:flex-end"><button class="btn btn-outline" data-close>Batal</button><button class="btn btn-primary" data-ok>' + icon('check', 'ic-sm') + 'Dana masuk · Buat kode</button></div>', { wide: true });
+    const chk = () => { const a = affs.find(x => x.id === md.el.querySelector('#va').value); md.el.querySelector('#vself').innerHTML = selfWarn(a, o.email, o.wa); };
+    md.el.querySelector('#va').addEventListener('change', chk); chk();
+    md.el.querySelector('[data-ok]').addEventListener('click', async () => {
+      const btn = md.el.querySelector('[data-ok]'); btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-top-color:#fff"></span>';
+      const r = await api('admin.orderProcess', { id: o.id, op: 'verifikasi', affiliate_id: md.el.querySelector('#va').value, kirimEmail: md.el.querySelector('#ve').checked });
+      md.close();
+      if (!r.success) { U.toast(r.message, 'error'); return pPesanan(); }
+      codeResult(r, o.email, true, pPesanan);
+    });
+  }
+  // Peringatan affiliate membeli untuk dirinya sendiri
+  const normWa = s => { let w = String(s || '').replace(/[^0-9]/g, ''); if (w.startsWith('0')) w = '62' + w.slice(1); return w; };
+  function isSelf(a, email, wa) {
+    if (!a) return false;
+    const e1 = String(email || '').trim().toLowerCase(), e2 = String(a.email || '').trim().toLowerCase();
+    const w1 = normWa(wa), w2 = normWa(a.wa);
+    return (!!e1 && e1 === e2) || (w1.length >= 9 && w1 === w2);
+  }
+  const selfWarn = (a, email, wa) => isSelf(a, email, wa) ? '<div class="info warning">' + icon('alert') + '<div><b>Pembeli adalah affiliate ' + esc(a.nama) + ' sendiri</b> (email atau WhatsApp sama). Penjualan tetap dicatat atas nama mitra, tetapi <b>komisi otomatis Rp 0</b>.</div></div>' : '';
+  // Jendela hasil pembuatan kode
+  function codeResult(r, email, sentWanted, onClose) {
+    const x = r.data;
+    const md = U.modal('<div class="modal-head"><div class="row"><span class="icon-tile sm success">' + icon('check') + '</span><h2 class="h3">' + esc(r.message) + '</h2></div><button class="icon-btn" data-close>' + icon('x') + '</button></div>' +
+      x.codes.map(c => '<div class="code-box">' + esc(c) + '</div>').join('') +
+      '<div class="row wrap">' + (email && sentWanted ? (x.emailSent ? '<span class="pill pill-success">' + icon('mail', 'ic-sm') + 'Email terkirim</span>' : '<span class="pill pill-danger">Email gagal: ' + esc(x.emailError || '-') + '</span>') : '') + (x.komisi ? '<span class="pill pill-primary">Komisi ' + rupiah(x.komisi) + ' tercatat</span>' : '') + (x.beliSendiri ? '<span class="pill pill-neutral">Beli sendiri · komisi Rp 0</span>' : '') + '</div>' +
+      '<div class="row wrap"><button class="btn btn-outline" id="cc">' + icon('copy', 'ic-sm') + 'Salin kode</button><button class="btn btn-secondary" id="cw">' + icon('copy', 'ic-sm') + 'Salin pesan WA</button>' + (x.wa ? '<a class="btn btn-primary" target="_blank" rel="noopener" href="' + U.waLink(x.wa, x.waText) + '">' + icon('chat', 'ic-sm') + 'Kirim lewat WhatsApp</a>' : '') + '</div>' +
+      '<div class="row-between" style="border-top:1px solid var(--border);padding-top:14px"><a class="link-btn" href="#/kode/' + esc(x.kode_id) + '" data-close>Lihat detail kode</a><button class="btn btn-outline btn-sm" data-close>Tutup</button></div>', { onClose });
+    md.el.querySelector('#cc').addEventListener('click', () => U.copyText(x.codes.join('\n')));
+    md.el.querySelector('#cw').addEventListener('click', () => U.copyText(x.waText));
   }
 
   // ============================================
@@ -335,16 +409,36 @@
   // ============================================
   async function pAffiliate() {
     shell('affiliate', 'Affiliate', skeleton());
-    const r = await api('admin.affList');
+    const [r, rd] = await Promise.all([api('admin.affList'), api('admin.daftarList')]);
     if (!r.success) return ($('#content').innerHTML = errBox(r));
     const list = r.data;
+    const daftar = (rd.data || []).filter(x => x.status === 'MENUNGGU');
+    S.badges = Object.assign({}, S.badges, { affiliate: daftar.length || '' });
     shell('affiliate', 'Affiliate', head('Affiliate', 'Mitra yang menjual kode dan mendapat komisi.', '<button class="btn btn-primary" id="add">' + icon('plus', 'ic-sm') + 'Tambah Affiliate</button>') +
+      (daftar.length ? '<section class="card p0" style="border-color:var(--primary)"><div class="card-pad row-between" style="border-bottom:1px solid var(--border);background:var(--primary-tint)"><h2 class="h3">Pendaftar baru (' + daftar.length + ')</h2><span class="small muted">Dari halaman Jadi Affiliate</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Nama</th><th>Kontak</th><th>Sekolah / komunitas</th><th>Rencana berbagi</th><th class="r">Aksi</th></tr></thead><tbody>' +
+        daftar.map((x, i) => '<tr><td class="small">' + tglJam(x.tanggal) + '</td><td><b>' + esc(x.nama) + '</b></td><td class="small">' + esc(x.email) + '<br><a target="_blank" rel="noopener" href="' + U.waLink(x.wa, 'Halo ' + x.nama + ', terima kasih sudah mendaftar affiliate EduGrade.') + '">' + esc(x.wa) + '</a></td><td class="small">' + esc(x.sekolah || '-') + '</td><td class="small" style="max-width:280px">' + esc(x.alasan || '-') + '</td><td class="r"><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn btn-primary btn-xs" data-acc="' + i + '">' + icon('check', 'ic-sm') + 'Setujui</button><button class="btn btn-outline btn-xs" data-rej="' + i + '">Tolak</button></div></td></tr>').join('') + '</tbody></table></div></section>' : '') +
       '<section class="grid-4">' + stat('Mitra aktif', list.filter(a => a.aktif).length) + stat('Penjualan lewat mitra', list.reduce((a, x) => a + x.penjualan, 0)) + stat('Komisi terkumpul', rupiah(list.reduce((a, x) => a + x.komisi, 0))) + stat('Komisi belum dibayar', rupiah(list.reduce((a, x) => a + x.sisa, 0))) + '</section>' +
       '<section class="card p0"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nama</th><th>Kode referral</th><th class="r">Komisi</th><th class="r">Penjualan</th><th class="r">Komisi terkumpul</th><th class="r">Sudah dibayar</th><th class="r">Sisa</th><th>Status</th><th class="r">Aksi</th></tr></thead><tbody>' +
       (list.length ? list.map((a, i) => '<tr><td><b>' + esc(a.nama) + '</b><div class="small muted">' + esc(a.email) + (a.wa ? ' · ' + esc(a.wa) : '') + '</div></td><td><span class="mono b">' + esc(a.ref) + '</span></td><td class="r tnum">' + a.persen + '%</td><td class="r tnum">' + a.penjualan + '</td><td class="r tnum">' + rupiah(a.komisi) + '</td><td class="r tnum">' + rupiah(a.dibayar) + '</td><td class="r tnum b">' + rupiah(a.sisa) + '</td><td>' + (a.aktif ? '<span class="pill pill-success">Aktif</span>' : '<span class="pill pill-neutral">Nonaktif</span>') + '</td><td class="r"><div class="row" style="justify-content:flex-end;gap:6px">' + (a.sisa ? '<a class="btn btn-tint btn-xs" href="#/penjualan" data-aff="' + esc(a.nama) + '">Bayar komisi</a>' : '') + '<button class="btn btn-outline btn-xs" data-edit="' + i + '">' + icon('pencil', 'ic-sm') + 'Ubah</button></div></td></tr>').join('') : '<tr><td colspan="9"><div class="empty">' + icon('users', 'ic-lg') + 'Belum ada affiliate.</div></td></tr>') + '</tbody></table></div></section>' +
       '<div class="info">' + icon('info') + '<div>Perubahan persen komisi berlaku untuk penjualan berikutnya. Affiliate masuk lewat <b>admin.html</b> dengan email dan sandinya sendiri.</div></div>');
     $('#add').addEventListener('click', () => affForm(null));
     document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => affForm(list[+b.dataset.edit])));
+    document.querySelectorAll('[data-acc]').forEach(b => b.addEventListener('click', () => {
+      const x = daftar[+b.dataset.acc];
+      const md = U.modal('<div class="modal-head"><h2 class="h3">Setujui ' + esc(x.nama) + '</h2><button class="icon-btn sm" data-close>' + icon('x', 'ic-sm') + '</button></div><div class="grid-2" style="gap:12px"><label class="field"><span class="field-label">Persen komisi</span><input class="input" type="number" id="dp" value="' + ((S.cache.settings && S.cache.settings.AFF_PERSEN_DEFAULT) || 20) + '"></label><label class="field"><span class="field-label">Kode referral (boleh kosong)</span><input class="input" id="dr" style="text-transform:uppercase"></label></div><label class="row" style="gap:10px"><input type="checkbox" class="check" id="de" checked>Kirim info akun ke email ' + esc(x.email) + '</label><div class="row" style="justify-content:flex-end"><button class="btn btn-outline" data-close>Batal</button><button class="btn btn-primary" data-ok>Setujui & buat akun</button></div>');
+      md.el.querySelector('[data-ok]').addEventListener('click', async () => {
+        const res = await api('admin.daftarProcess', { id: x.id, op: 'setujui', persen: md.el.querySelector('#dp').value, ref: md.el.querySelector('#dr').value, kirimEmail: md.el.querySelector('#de').checked });
+        md.close();
+        if (!res.success) return U.toast(res.message, 'error');
+        const m2 = U.modal('<div class="modal-head"><h2 class="h3">Akun affiliate dibuat</h2><button class="icon-btn sm" data-close>' + icon('x', 'ic-sm') + '</button></div>' + (res.data.emailSent ? '<span class="pill pill-success">' + icon('mail', 'ic-sm') + 'Info akun terkirim ke email</span>' : '') + '<p class="muted">Kirim juga lewat WhatsApp. Sandi hanya tampil sekali.</p><div class="wa-bubble">' + esc(res.data.info) + '</div><div class="row wrap"><button class="btn btn-secondary" id="cp">' + icon('copy', 'ic-sm') + 'Salin</button><a class="btn btn-primary" target="_blank" rel="noopener" href="' + U.waLink(res.data.wa, res.data.info) + '">' + icon('chat', 'ic-sm') + 'Kirim lewat WhatsApp</a></div>', { onClose: pAffiliate });
+        m2.el.querySelector('#cp').addEventListener('click', () => U.copyText(res.data.info));
+      });
+    }));
+    document.querySelectorAll('[data-rej]').forEach(b => b.addEventListener('click', async () => {
+      const x = daftar[+b.dataset.rej];
+      if (!(await U.confirmBox('Tolak pendaftar?', x.nama + ' (' + x.email + ') tidak akan dibuatkan akun.', 'Tolak', true))) return;
+      const res = await api('admin.daftarProcess', { id: x.id, op: 'tolak' }); U.toast(res.message, res.success ? 'success' : 'error'); pAffiliate();
+    }));
     document.querySelectorAll('[data-aff]').forEach(b => b.addEventListener('click', () => { S.jualQ = { q: '', tab: 'belum', aff: b.dataset.aff }; }));
   }
   function affForm(a) {
@@ -407,12 +501,26 @@
     const r = await api('admin.settingsGet');
     if (!r.success) return ($('#content').innerHTML = errBox(r));
     const v = {}; r.data.forEach(x => { v[x.key] = x.value; });
+    S.cache.settings = v;
+    let rek = []; try { rek = JSON.parse(v.REKENING_JSON || '[]'); } catch (e) { rek = []; }
+    if (!Array.isArray(rek)) rek = [];
+    const rekRow = (x, i) => '<div class="row wrap rek-row" data-i="' + i + '" style="gap:8px"><input class="input sm" style="width:110px" placeholder="Bank" data-rk="bank" value="' + esc(x.bank || '') + '"><input class="input sm grow" style="min-width:150px" placeholder="Nomor rekening" data-rk="nomor" value="' + esc(x.nomor || '') + '"><input class="input sm grow" style="min-width:150px" placeholder="Atas nama" data-rk="nama" value="' + esc(x.nama || '') + '"><label class="row small" style="gap:6px"><input type="checkbox" class="check" data-rk="aktif" ' + (x.aktif === false ? '' : 'checked') + '>Tampil</label><button type="button" class="icon-btn sm" data-rkdel="' + i + '" aria-label="Hapus">' + icon('trash', 'ic-sm') + '</button></div>';
+    const qrisUrl = v.QRIS_FILE_ID ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(v.QRIS_FILE_ID) + '&sz=w600' : '';
     const inp = k => '<label class="field"><span class="field-label">' + SET_LABEL[k] + '</span><input class="input" data-k="' + k + '" value="' + esc(v[k] || '') + '"></label>';
     const chips = ['NAMA_GURU', 'SEKOLAH', 'KODE', 'PAKET', 'KUOTA', 'MASA_BERLAKU', 'LINK_WEB'].map(c => '<button type="button" class="chip" data-var="{' + c + '}">{' + c + '}</button>').join('');
     shell('pengaturan', 'Pengaturan', head('Pengaturan', 'Kontak, aturan unduhan, dan template pesan.', '<button class="btn btn-primary" id="save">' + icon('check', 'ic-sm') + 'Simpan semua perubahan</button>') +
       '<section class="split"><div class="stack"><div class="card stack-sm"><h2 class="h3">Kontak penjual</h2>' + inp('WA_ADMIN') + inp('NAMA_PENGIRIM') + inp('LINK_WEB') + '<label class="field"><span class="field-label">' + SET_LABEL.BANNER + '</span><textarea class="textarea" style="min-height:80px" data-k="BANNER">' + esc(v.BANNER || '') + '</textarea></label></div>' +
       '<div class="card stack-sm"><h2 class="h3">Aturan unduhan</h2>' + inp('UNDUH_ULANG_JAM') + inp('KODE_BARU_KEDALUWARSA_HARI') +
       '<label class="row-between card-flat" style="cursor:pointer"><span class="stack-xs"><b>Mode perawatan</b><span class="small muted">Tutup unduhan sementara. Guru tetap bisa mencoba.</span></span><input type="checkbox" class="check" id="maint" ' + (/^ya$/i.test(v.MODE_PERAWATAN || '') ? 'checked' : '') + '></label></div>' +
+      '<div class="card stack-sm"><h2 class="h3">Pembayaran</h2><p class="small muted">Tampil di halaman pembayaran guru setelah membuat pesanan.</p>' +
+      '<b class="label">Rekening tujuan</b><div class="stack-sm" id="rekList">' + (rek.length ? rek.map(rekRow).join('') : '') + '</div><button type="button" class="btn btn-outline btn-sm" id="rekAdd" style="align-self:flex-start">' + icon('plus', 'ic-sm') + 'Tambah rekening</button>' +
+      '<b class="label mt-sm">QRIS</b><div class="row wrap" style="align-items:flex-start">' + (qrisUrl ? '<img src="' + esc(qrisUrl) + '" alt="QRIS" referrerpolicy="no-referrer" style="width:140px;border-radius:12px;border:1px solid var(--border)">' : '<div class="empty" style="padding:16px;border:1px dashed var(--border);border-radius:12px;width:140px">Belum ada gambar</div>') +
+      '<div class="stack-sm"><label class="btn btn-secondary btn-sm">' + icon('upload', 'ic-sm') + (qrisUrl ? 'Ganti gambar QRIS' : 'Unggah gambar QRIS') + '<input type="file" accept="image/png,image/jpeg" class="sr-only" id="qrisFile"></label>' + (qrisUrl ? '<button type="button" class="link-btn small" id="qrisDel">Hapus QRIS</button>' : '') +
+      '<label class="row small" style="gap:8px"><input type="checkbox" class="check" id="qrisOn" ' + (/^ya$/i.test(v.QRIS_AKTIF || '') ? 'checked' : '') + '>Tampilkan QRIS</label><span class="small muted">Gambar disimpan di folder EduGrade di Google Drive Anda.</span></div></div>' +
+      '<label class="row-between card-flat" style="cursor:pointer"><span class="stack-xs"><b>Kode unik</b><span class="small muted">Tambah 1–299 rupiah ke total agar transfer mudah dicocokkan.</span></span><input type="checkbox" class="check" id="kodeUnik" ' + (/^ya$/i.test(v.KODE_UNIK || '') ? 'checked' : '') + '></label>' +
+      '<label class="field"><span class="field-label">Petunjuk pembayaran</span><textarea class="textarea" style="min-height:80px" data-k="INSTRUKSI_BAYAR">' + esc(v.INSTRUKSI_BAYAR || '') + '</textarea></label></div>' +
+      '<div class="card stack-sm"><h2 class="h3">Program affiliate</h2><label class="row-between card-flat" style="cursor:pointer"><span class="stack-xs"><b>Buka pendaftaran affiliate</b><span class="small muted">Menampilkan formulir di halaman Jadi Affiliate.</span></span><input type="checkbox" class="check" id="affOpen" ' + (/^ya$/i.test(v.AFF_TERBUKA || '') ? 'checked' : '') + '></label>' +
+      '<label class="field"><span class="field-label">Persen komisi untuk affiliate baru</span><input class="input" type="number" min="0" max="90" data-k="AFF_PERSEN_DEFAULT" value="' + esc(v.AFF_PERSEN_DEFAULT || '20') + '"></label></div>' +
       '<div class="card stack-sm"><h2 class="h3">Keamanan</h2><div class="row wrap"><button class="btn btn-outline" id="chpw">' + icon('lock', 'ic-sm') + 'Ubah sandi admin</button></div></div></div>' +
       '<div class="card stack-sm"><h2 class="h3">Template pesan</h2><p class="small muted">Klik kata kunci untuk menyisipkannya di posisi kursor.</p><div class="chips">' + chips + '</div>' + inp('EMAIL_SUBJECT') +
       '<label class="field"><span class="field-label">' + SET_LABEL.EMAIL_BODY + '</span><textarea class="textarea" style="min-height:240px" data-k="EMAIL_BODY">' + esc(v.EMAIL_BODY || '') + '</textarea></label>' +
@@ -424,11 +532,29 @@
       const el = lastFocus || document.querySelector('[data-k="EMAIL_BODY"]');
       const s = el.selectionStart || el.value.length; el.value = el.value.slice(0, s) + b.dataset.var + el.value.slice(el.selectionEnd || s); el.focus();
     }));
-    $('#save').addEventListener('click', async () => {
+    const saveAll = async silent => {
       const values = {}; document.querySelectorAll('[data-k]').forEach(el => { values[el.dataset.k] = el.value; });
       values.MODE_PERAWATAN = $('#maint').checked ? 'YA' : 'TIDAK';
-      const x = await api('admin.settingsSave', { values }); U.toast(x.message, x.success ? 'success' : 'error');
+      values.QRIS_AKTIF = $('#qrisOn').checked ? 'YA' : 'TIDAK';
+      values.KODE_UNIK = $('#kodeUnik').checked ? 'YA' : 'TIDAK';
+      values.AFF_TERBUKA = $('#affOpen').checked ? 'YA' : 'TIDAK';
+      const rows = Array.from(document.querySelectorAll('.rek-row')).map(rw => ({ bank: rw.querySelector('[data-rk=bank]').value.trim(), nomor: rw.querySelector('[data-rk=nomor]').value.trim(), nama: rw.querySelector('[data-rk=nama]').value.trim(), aktif: rw.querySelector('[data-rk=aktif]').checked })).filter(x => x.bank || x.nomor);
+      if (rows.some(x => !x.bank || !x.nomor || !x.nama)) return U.toast('Lengkapi bank, nomor, dan atas nama untuk setiap rekening.', 'error');
+      values.REKENING_JSON = JSON.stringify(rows);
+      const x = await api('admin.settingsSave', { values }); if (!silent || !x.success) U.toast(x.message, x.success ? 'success' : 'error');
+      return x.success;
+    };
+    $('#save').addEventListener('click', () => saveAll(false));
+    $('#rekAdd').addEventListener('click', () => { const box = $('#rekList'); const div = document.createElement('div'); div.innerHTML = rekRow({}, box.children.length); box.appendChild(div.firstChild); });
+    $('#rekList').addEventListener('click', e => { const b = e.target.closest('[data-rkdel]'); if (b) b.closest('.rek-row').remove(); });
+    $('#qrisFile').addEventListener('change', e => {
+      const file = e.target.files[0]; if (!file) return;
+      if (file.size > 2 * 1024 * 1024) return U.toast('Gambar terlalu besar (maksimal 2 MB).', 'error');
+      const fr = new FileReader();
+      fr.onload = async () => { if (!(await saveAll(true))) return; U.loading(true, 'Mengunggah gambar QRIS...'); const x = await api('admin.qrisUpload', { dataUrl: fr.result }); U.loading(false); U.toast(x.message, x.success ? 'success' : 'error'); if (x.success) pPengaturan(); };
+      fr.readAsDataURL(file);
     });
+    if ($('#qrisDel')) $('#qrisDel').addEventListener('click', async () => { if (!(await U.confirmBox('Hapus gambar QRIS?', 'Guru tidak akan melihat pilihan QRIS lagi.', 'Hapus', true))) return; const x = await api('admin.qrisDelete'); U.toast(x.message, x.success ? 'success' : 'error'); pPengaturan(); });
     $('#test').addEventListener('click', async () => { const x = await api('admin.testEmail', { email: $('#testTo').value }); U.toast(x.message, x.success ? 'success' : 'error'); });
     $('#chpw').addEventListener('click', () => {
       const md = U.modal('<div class="modal-head"><h2 class="h3">Ubah sandi admin</h2><button class="icon-btn sm" data-close>' + icon('x', 'ic-sm') + '</button></div><label class="field"><span class="field-label">Sandi lama</span><input class="input" type="password" id="pl"></label><label class="field"><span class="field-label">Sandi baru (min. 8 karakter)</span><input class="input" type="password" id="pb"></label><div class="row" style="justify-content:flex-end"><button class="btn btn-outline" data-close>Batal</button><button class="btn btn-primary" data-ok>Simpan</button></div>');
@@ -487,7 +613,7 @@
     const h = location.hash.replace(/^#\/?/, '').split('/');
     const page = h[0] || 'ringkasan';
     if (page === 'kode' && h[1]) return pKodeDetail(h[1]);
-    ({ ringkasan: pRingkasan, kode: pKode, buat: pBuat, penjualan: pPenjualan, affiliate: pAffiliate, paket: pPaket, pengaturan: pPengaturan, log: pLog }[page] || pRingkasan)();
+    ({ ringkasan: pRingkasan, pesanan: pPesanan, kode: pKode, buat: pBuat, penjualan: pPenjualan, affiliate: pAffiliate, paket: pPaket, pengaturan: pPengaturan, log: pLog }[page] || pRingkasan)();
   }
   window.addEventListener('hashchange', render);
   document.addEventListener('DOMContentLoaded', render);
