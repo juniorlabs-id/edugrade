@@ -14,7 +14,7 @@
     get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* abaikan */ } }
   };
-  const DEF_PREFS = { kkm: 70, h1: 75, h2: 95, method: 'linear', n: 5, dec: 0, tMin: 90, rMax: 85, maxT: 2, maxR: 2 };
+  const DEF_PREFS = { kkm: 70, h1: 75, h2: 95, method: 'linear', n: 5, dec: 0, tMin: 90, rMax: 85 };
 
   // ============================================
   // STATE
@@ -535,7 +535,7 @@
   function ensureE() {
     if (!S.e) {
       const p = S.prefs;
-      S.e = { tpls: [], src: (S.k && S.k.wb) ? 'konv' : 'file', file: null, wb: null, crit: { tMin: p.tMin, rMax: p.rMax, maxT: p.maxT, maxR: p.maxR }, tab: 0, filter: 'all', search: '', force: false, stuFilter: null, outputs: null, sel: null, bad: [] };
+      S.e = { tpls: [], src: (S.k && S.k.wb) ? 'konv' : 'file', file: null, wb: null, crit: { tMin: p.tMin, rMax: p.rMax }, tab: 0, filter: 'all', search: '', force: false, stuFilter: null, outputs: null, sel: null, bad: [] };
     }
     return S.e;
   }
@@ -671,7 +671,6 @@
     const c = S.e.crit, inR = v => v != null && v >= 0 && v <= 100;
     if (!inR(num(c.tMin)) || !inR(num(c.rMax))) return 'Batas T dan R harus antara 0 sampai 100.';
     if (+c.tMin < +c.rMax) return 'Batas T harus sama atau lebih besar dari batas R.';
-    if (!(num(c.maxT) >= 0 && num(c.maxT) <= 20) || !(num(c.maxR) >= 0 && num(c.maxR) <= 20)) return 'Jumlah maksimal T dan R antara 0 sampai 20 (0 = tanpa batas).';
     return '';
   }
   function er2() {
@@ -687,7 +686,8 @@
     const inp = (lbl, key, help) => '<label class="row-between" style="gap:16px"><span>' + lbl + (help ? '<br><span class="small muted">' + help + '</span>' : '') + '</span><input class="input big" style="width:96px;text-align:center;font-size:20px" type="number" min="0" max="100" data-in="crit" data-k="' + key + '" value="' + esc(c[key]) + '"></label>';
     const critCard = '<section class="card stack-sm"><div class="row-between"><h2 class="h3">Kriteria T dan R</h2><button class="link-btn" data-act="critReset">Kembalikan ke bawaan</button></div>' +
       '<p class="small muted"><b>T (Tinggi)</b> = TP yang dicapai sangat baik. <b>R (Rendah)</b> = TP yang perlu ditingkatkan.</p>' +
-      inp('<b>T</b> jika nilai TP mulai dari', 'tMin') + inp('<b>R</b> jika nilai TP di bawah', 'rMax') + inp('Maksimal T per siswa', 'maxT', '0 = tanpa batas') + inp('Maksimal R per siswa', 'maxR', '0 = tanpa batas') +
+      inp('<b>T</b> jika nilai TP mulai dari', 'tMin') + inp('<b>R</b> jika nilai TP di bawah', 'rMax') +
+      '<div class="card-flat stack-xs" style="background:var(--page)"><b>Jumlah T dan R yang ditulis</b><span class="small muted">Bila TP yang memenuhi syarat lebih dari 1: lebih dari 50% jumlah TP → ditulis <b>2</b> (nilai paling tinggi/rendah); selain itu → ditulis <b>1</b>.</span><span class="small muted">Contoh 6 TP: 3 TP ≥ 90 → 1 T; 4 TP ≥ 90 → 2 T.</span></div>' +
       '<div id="critErr">' + (ce ? '<div class="err-msg">' + icon('alert-circle') + esc(ce) + '</div>' : '') + '</div>' +
       '<div class="info">' + icon('sparkles') + '<div>EduGrade mengatur otomatis agar aturan e-Rapor terpenuhi: nilai di bawah 100 wajib ada R, nilai 100 tidak boleh ada R. Bila tidak ada TP yang memenuhi batas, TP tertinggi/terendah ditandai otomatis.</div></div>' +
       '<p class="small muted">Nilai TP yang dipakai: nilai TP asli.</p></section>';
@@ -756,7 +756,7 @@
       '<section class="grid-3"><div class="info success" style="justify-content:space-between"><b class="tnum" style="font-size:17px">' + sm.valid + ' Valid</b>' + icon('check-circle') + '</div>' +
       '<div class="info ' + (sm.invalid ? 'warning' : '') + '" style="justify-content:space-between;' + (sm.invalid ? '' : 'background:#fff;border:1px solid var(--border);color:var(--muted)') + '"><b class="tnum" style="font-size:17px">' + sm.invalid + ' Perlu diperbaiki</b>' + icon('alert') + '</div>' +
       '<div class="info" style="justify-content:space-between;background:#fff;border:1px solid var(--border);color:var(--muted)"><b class="tnum" style="font-size:17px">' + sm.skip + ' Dilewati</b>' + icon('minus-circle') + '</div></section>' +
-      '<div class="card-flat row-between"><div class="row wrap"><span>T mulai ' + fmt(c.tMin) + ', R di bawah ' + fmt(c.rMax) + ', maksimal ' + (+c.maxT || 'tanpa batas') + ' T dan ' + (+c.maxR || 'tanpa batas') + ' R</span><a class="link-btn" href="#/erapor/2">Ubah kriteria</a></div>' +
+      '<div class="card-flat row-between"><div class="row wrap"><span>T mulai ' + fmt(c.tMin) + ', R di bawah ' + fmt(c.rMax) + ', ditulis 1 atau 2 (2 bila lebih dari 50% TP memenuhi)</span><a class="link-btn" href="#/erapor/2">Ubah kriteria</a></div>' +
       '<div class="legend"><span class="row" style="gap:6px"><span class="tr sm T">T</span>Tinggi</span><span class="row" style="gap:6px"><span class="tr sm R">R</span>Rendah</span><span class="row" style="gap:6px"><span class="tr sm">–</span>Kosong</span><span class="row" style="gap:6px"><span class="tr sm R auto">R</span>Diisi otomatis</span></div></div>' +
       '<div class="row-between"><div class="chips">' + [['all', 'Semua (' + sm.rows.length + ')'], ['bad', 'Perlu perhatian (' + sm.invalid + ')'], ['auto', 'Diisi otomatis (' + nAutoRows + ')']].map(f => '<button class="chip ' + (e.filter === f[0] ? 'on' : '') + '" data-act="erFilter" data-f="' + f[0] + '">' + f[1] + '</button>').join('') + '</div>' +
       '<div class="row wrap"><div class="search">' + icon('search') + '<input class="input" type="search" placeholder="Cari nama siswa..." data-in="erSearch" value="' + esc(e.search) + '"></div>' + (Object.keys(m.edits).length ? '<button class="link-btn" data-act="erReset">' + icon('refresh', 'ic-sm') + ' Kembalikan otomatis</button>' : '') + '</div></div>' +
@@ -1180,7 +1180,7 @@
     // e-Rapor
     tplRemove: el => { S.e.tpls.splice(+el.dataset.i, 1); S.e.outputs = null; S.e.tab = 0; render(); },
     erSrc: el => { S.e.src = el.dataset.v; S.e.tpls.forEach(m => { m.sheet = null; }); render(); },
-    critReset: () => { S.e.crit = { tMin: DEF_PREFS.tMin, rMax: DEF_PREFS.rMax, maxT: DEF_PREFS.maxT, maxR: DEF_PREFS.maxR }; Object.assign(S.prefs, S.e.crit); savePrefs(); render(); },
+    critReset: () => { S.e.crit = { tMin: DEF_PREFS.tMin, rMax: DEF_PREFS.rMax }; Object.assign(S.prefs, S.e.crit); savePrefs(); render(); },
     erTab: el => { S.e.tab = +el.dataset.i; S.e.stuFilter = null; render(); },
     erTab4: el => { S.e.tab = +el.dataset.i; render(); },
     stuFilter: el => { S.e.stuFilter = el.dataset.f; render(); },

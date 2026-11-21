@@ -605,12 +605,18 @@
   // E-RAPOR: ATURAN T/R (FR-E4)
   // ============================================
   // scores: array nilai per TP (urut template; null = tidak ada nilai)
-  // crit: {tMin, rMax, maxT, maxR}  (maxT/maxR 0 = tanpa batas)
+  // crit: {tMin, rMax}
+  // Jumlah T/R yang ditulis: bila TP yang memenuhi syarat lebih dari 1,
+  //   lebih dari 50% jumlah TP template -> 2, selain itu -> 1.
+  //   Bila 0 atau 1, dipakai apa adanya (0 -> ditandai otomatis bila wajib).
+  function trCount(cand, nTp) {
+    if (cand <= 1) return cand;
+    return cand > nTp * 0.5 ? 2 : 1;
+  }
   function decideTR(scores, nilai, crit) {
     const n = scores.length;
     const marks = Array(n).fill(''), auto = Array(n).fill(false);
     const idx = scores.map((v, i) => ({ v, i })).filter(x => isNum(x.v));
-    const lim = k => (k > 0 ? k : Infinity);
     let warn = '';
     if (!idx.length) return { marks, auto, warn: 'Tidak ada nilai TP untuk siswa ini.' };
     const desc = idx.slice().sort((a, b) => b.v - a.v || a.i - b.i);
@@ -618,15 +624,16 @@
     const candT = desc.filter(x => x.v >= crit.tMin);
     const candR = asc.filter(x => x.v < crit.rMax);
     if (nilai >= 100) {
-      let T = candT.slice(0, lim(crit.maxT));
+      let T = candT.slice(0, trCount(candT.length, n));
       if (!T.length) { T = [desc[0]]; auto[desc[0].i] = true; }
       T.forEach(x => { marks[x.i] = 'T'; });
     } else {
-      let R = candR.slice(0, lim(crit.maxR));
+      let R = candR.slice(0, trCount(candR.length, n));
       if (!R.length) { R = [asc[0]]; auto[asc[0].i] = true; }
       R.forEach(x => { marks[x.i] = 'R'; });
       const rest = desc.filter(x => marks[x.i] !== 'R');
-      let T = candT.filter(x => marks[x.i] !== 'R').slice(0, lim(crit.maxT));
+      const ct = candT.filter(x => marks[x.i] !== 'R');
+      let T = ct.slice(0, trCount(ct.length, n));
       if (!T.length && rest.length) { T = [rest[0]]; auto[rest[0].i] = true; }
       T.forEach(x => { marks[x.i] = 'T'; });
     }
@@ -716,6 +723,6 @@
     convertSeries, defaultT, stats, bins,
     applyCellEdits, shiftFormula, buildKonversi,
     parseTemplate, matchMapelSheet, analyzeTpSheet, matchTPs, matchStudents, nameScore,
-    decideTR, validity, toRapor, buildErapor, zipFiles, sha256
+    decideTR, trCount, validity, toRapor, buildErapor, zipFiles, sha256
   };
 });
